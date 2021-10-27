@@ -1,2 +1,2 @@
-# projet-num-python-cmi
-Projet numérique Python - CMI M1
+# Projet numérique Python - CMI M1
+Groupe ? - Sujet : ?
