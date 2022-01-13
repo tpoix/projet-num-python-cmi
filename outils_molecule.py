@@ -30,6 +30,7 @@ def affichage_resultat(dataframe):
 def trouver_molecule(masse_exp):
     """
     Trouve les molécules possibles pour la masse expérimentale donnée.
+    Renvoie les molécules possibles dans un dataframe.
     """
     molecules = pd.read_excel('Pyoverdine Germain Final.xlsx', header=2, sheet_name="Molécules")
     molecules = molecules.drop(molecules.columns[16:], axis=1)
@@ -116,5 +117,4 @@ def trouver_molecule(masse_exp):
                 atomes["Al"] += molecules.fillna(0)[molecules["ID"]==index]["NbrAl"].item() * value
         serie = pd.Series(candidate + (0,) + tuple(atomes.values()), index=candidates_df.columns)
         candidates_df = candidates_df.append(serie,ignore_index=True)
-    
-    affichage_resultat(candidates_df)
+    return(candidates_df)
