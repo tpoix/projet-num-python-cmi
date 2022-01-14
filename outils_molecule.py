@@ -48,7 +48,7 @@ def trouver_molecule(masse_exp):
     masses_chromo = {}
     masses_side_chain = {}
     masses_metaux = {}
-    ranges_ = [range(2)] * 19
+    ranges_ = [range(3)] * 19
     for index, row in acides_amines.iterrows():
         masses_acides[row["ID"]]=row["Masse théo"]
     for index, row in cyclisation.iterrows():
