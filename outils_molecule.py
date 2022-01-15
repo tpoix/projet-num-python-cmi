@@ -32,6 +32,8 @@ def trouver_molecule(masse_exp):
     Trouve les molécules possibles pour la masse expérimentale donnée.
     Renvoie les molécules possibles dans un dataframe.
     """
+
+    # Lecture des données dans des DataFrame par famille de groupements
     molecules = pd.read_excel('Pyoverdine Germain Final.xlsx', header=2, sheet_name="Molécules")
     molecules = molecules.drop(molecules.columns[16:], axis=1)
     acides_amines = molecules.iloc[:19]
@@ -42,7 +44,7 @@ def trouver_molecule(masse_exp):
     resultats = pd.read_excel('Pyoverdine Germain Final.xlsx', header=3, sheet_name="Charges")
     resultats = resultats.drop([1,3]) # On enlève les lignes vides du tableau
 
-    #Création d'un dictionnaire contenant la masse théorique de chacune des molécules
+    # Création d'un dictionnaire contenant la masse théorique de chacune des molécules
     masses_acides = {}
     masses_cycle = {}
     masses_chromo = {}
@@ -59,23 +61,27 @@ def trouver_molecule(masse_exp):
         masses_side_chain[row["ID"]]=row["Masse théo"]
     for index, row in metaux.iterrows():
         masses_metaux[row["ID"]]=row["Masse théo"]
-
+    # On considère les candidats pour 2 mêmes molécules max
     candidates = []
-    #On considère les candidats pour 2 mêmes molécules max
-    ranges_familles = [range(3)]*5
+    ranges_familles = [range(2)]*5
 
+    # Pour chaque combinaison possible
     for nuplets in product(*ranges_):
         # On calcule la masse théorique des acides aminés
         masse_theo_acides = sum([nuplets[i] * list(masses_acides.values())[i] for i in range(len(nuplets))])
         
         # Puis, on regarde pour chaque chromophore, side_chain, métal et cycles si ça correspond
-        # (les conditions de type "Si Ch3 alors pas de side" ne sont pas encore implémentées)
         for chromo in masses_chromo:
+            # Pour chaque chromophore
             for side in masses_side_chain:
+                # Pour chaque side chain
                 for met in masses_metaux:
+                    # Pour chaque metal
                     for nuplet_famille in product(*ranges_familles):
+                        # On étudie les combinaisons qui contiennent une ou zéro molécule de chaque famille
                         masses_familles = [masses_cycle["Cyclisation -H2O"], masses_cycle["OH Terminal"], masses_chromo[chromo], masses_side_chain[side], masses_metaux[met]]
                         masse_theo_totale = masse_theo_acides + sum([nuplet_famille[i] * masses_familles[i] for i in range(len(nuplet_famille))])
+
                         if(math.isclose(masse_exp, masse_theo_totale, rel_tol=1e-05)):
                             # Si la masse théorique est à peu près égale à l'expérimentale,
                             # alors on récupère le nombre de chaque molécule présente.
@@ -103,9 +109,13 @@ def trouver_molecule(masse_exp):
         candidate2 = candidate + (0,)*(len(candidates_df.columns)-len(candidate))
         serie = pd.Series(candidate2, index=candidates_df.columns)
         atomes = {"C":0, "H":0, "N":0, "O":0, "S":0, "Fe":0, "Al":0}
+
+        # Pour chaque candidat, calcul de la composition en atomes
         for index, value in serie.items():
             if(index in molecules["ID"].values):
                 atomes["C"] += molecules.fillna(0)[molecules["ID"]==index]["NbrC"].item() * value
+                # Si la molécule contient du Fe(III) - 3H+ ou du Al(III) - 3H+
+                # on retire des atomes d'hydrogène au lieu de les ajouter.
                 if(index == "Fe(III) - 3 H+" or index == "Al(III) - 3 H+"):
                     atomes["H"] -= molecules.fillna(0)[molecules["ID"]==index]["NbrH"].item() * value
                 else:
@@ -115,6 +125,8 @@ def trouver_molecule(masse_exp):
                 atomes["S"] += molecules.fillna(0)[molecules["ID"]==index]["NbrS"].item() * value
                 atomes["Fe"] += molecules.fillna(0)[molecules["ID"]==index]["NbrFe"].item() * value
                 atomes["Al"] += molecules.fillna(0)[molecules["ID"]==index]["NbrAl"].item() * value
+                
+        # On ajoute les atomes à la série pour ensuite ajouter la série au dataFrame des résultats.
         serie = pd.Series(candidate + (0,) + tuple(atomes.values()), index=candidates_df.columns)
         candidates_df = candidates_df.append(serie,ignore_index=True)
     return(candidates_df)
